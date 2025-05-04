@@ -19,6 +19,22 @@ services:
       - "8090:8090"
     depends_on:
       - postgres
+      - restaurant-service
+      - accounting-service
+    networks:
+      - backend
+
+  restaurant-service:
+    build: ./restaurant-service
+    ports:
+      - "8091:8091"
+    networks:
+      - backend
+
+  accounting-service:
+    build: ./accounting-service
+    ports:
+      - "8092:8092"
     networks:
       - backend
 

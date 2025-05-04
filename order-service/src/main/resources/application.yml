@@ -24,3 +24,9 @@ logging:
   level:
     root: INFO
     it.unito.orderservice: DEBUG
+
+services:
+  restaurant:
+    url: http://restaurant-service:8091
+  accounting:
+    url: http://accounting-service:8092
