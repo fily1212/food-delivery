@@ -17,6 +17,13 @@ services:
     build: ./order-service
     ports:
       - "8090:8090"
+    environment:
+      # Sovrascrive le properties di Spring Boot
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/order_db # Usa il nome del servizio 'postgres-db' come hostname!
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+      SERVICES_RESTAURANT_URL: http://restaurant-service:8091 # Usa il nome del servizio 'restaurant-service'
+      SERVICES_ACCOUNTING_URL: http://accounting-service:8092 # Usa il nome del servizio 'accounting-service'
     depends_on:
       - postgres
       - restaurant-service

@@ -6,27 +6,27 @@ spring:
     name: order-service
 
   datasource:
-    url: jdbc:postgresql://postgres:5432/order_db
+    url: jdbc:postgresql://localhost:5432/order_db
     username: user
     password: password
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: update # Usa 'validate' o 'none' in produzione
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+services:
+  restaurant:
+    url: http://localhost:8091
+  accounting:
+    url: http://localhost:8092
+
 logging:
   level:
     root: INFO
     it.unito.orderservice: DEBUG
-
-services:
-  restaurant:
-    url: ${SERVICES_RESTAURANT_URL:http://localhost:8091}
-  accounting:
-    url: ${SERVICES_ACCOUNTING_URL:http://localhost:8092}
