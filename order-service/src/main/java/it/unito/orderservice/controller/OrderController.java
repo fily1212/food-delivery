@@ -9,7 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/orders") // Base path per tutte le operazioni sugli ordini
+@RequestMapping("/orders")
 @RequiredArgsConstructor
 public class OrderController {
 
@@ -18,9 +18,7 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<OrderDTO> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         OrderDTO createdOrder = orderService.createOrder(request);
-        // Restituisce 201 Created con l'oggetto creato nel body e l'URL nei Headers
         return ResponseEntity.status(HttpStatus.CREATED).body(createdOrder);
-        // Alternativa più RESTful: return ResponseEntity.created(URI.create("/orders/" + createdOrder.getId())).body(createdOrder);
     }
 
     @GetMapping("/{id}")

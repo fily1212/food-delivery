@@ -4,6 +4,7 @@ import it.unito.orderservice.dto.CreateOrderRequest;
 import it.unito.orderservice.dto.OrderDTO;
 import it.unito.orderservice.dto.OrderItemDTO;
 import it.unito.orderservice.model.Order;
+import it.unito.orderservice.model.OrderItem;
 import it.unito.orderservice.model.OrderStatus;
 import it.unito.orderservice.repository.OrderRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -13,8 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor // Lombok: Inietta dipendenze final nel costruttore
@@ -24,60 +25,60 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ObjectMapper objectMapper; // Spring Boot configura un bean ObjectMapper
 
-    @Transactional // Assicura atomicità a livello di DB per questa operazione
+    @Transactional
     public OrderDTO createOrder(CreateOrderRequest request) {
         log.info("Received request to create order: {}", request);
 
         Order order = new Order();
         order.setCustomerId(request.getCustomerId());
         order.setRestaurantId(request.getRestaurantId());
-        order.setStatus(OrderStatus.PENDING_VALIDATION); // Stato iniziale
+        order.setStatus(OrderStatus.PENDING_VALIDATION);
 
-        // Serializza gli items in JSON per salvarli nel campo TEXT
-        try {
-            order.setItemsJson(objectMapper.writeValueAsString(request.getItems()));
-        } catch (JsonProcessingException e) {
-            log.error("Failed to serialize order items for request: {}", request, e);
-            // Qui si dovrebbe lanciare un'eccezione specifica o gestire l'errore
-            // Per semplicità, potremmo impostare uno stato FAILED o lanciare RuntimeException
-            throw new RuntimeException("Failed to process order items", e);
-        }
+        // Mappa i DTO in entità OrderItem e calcola il totale
+        List<OrderItem> items = request.getItems().stream().map(dto -> {
+            OrderItem item = new OrderItem();
+            item.setOrder(order); // Imposta la relazione inversa
+            item.setProductName(dto.getProductName());
+            item.setQuantity(dto.getQuantity());
+            item.setUnitPrice(dto.getUnitPrice());
+            return item;
+        }).toList();
 
-        // Calcolo totale (semplificato, assumiamo prezzo sia negli item o lo recupereremo dopo)
-        // order.setTotalAmount(calculateTotal(request.getItems()));
+        order.setItems(items);
+
+        // Calcola il totale
+        BigDecimal total = items.stream()
+                .map(item -> item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        order.setTotalAmount(total);
 
         Order savedOrder = orderRepository.save(order);
         log.info("Order created with ID: {} and status: {}", savedOrder.getId(), savedOrder.getStatus());
 
-        // Converti l'entità salvata in DTO per la risposta
         return mapEntityToDto(savedOrder);
     }
-
-    // Metodo helper per mappare Entity a DTO
     private OrderDTO mapEntityToDto(Order order) {
-        // Deserializza itemsJson per popolare il DTO
-        List<OrderItemDTO> items = null;
-        try {
-            if (order.getItemsJson() != null) {
-                items = objectMapper.readValue(order.getItemsJson(),
-                        objectMapper.getTypeFactory().constructCollectionType(List.class, OrderItemDTO.class));
-            }
-        } catch (JsonProcessingException e) {
-            log.error("Failed to deserialize items for order ID: {}", order.getId(), e);
-            // Gestire l'errore, magari restituendo una lista vuota o null
-        }
+        List<OrderItemDTO> items = order.getItems().stream().map(entity -> {
+            OrderItemDTO dto = new OrderItemDTO();
+            dto.setProductName(entity.getProductName());
+            dto.setQuantity(entity.getQuantity());
+            dto.setUnitPrice(entity.getUnitPrice());
+            return dto;
+        }).toList();
 
         return OrderDTO.builder()
                 .id(order.getId())
                 .customerId(order.getCustomerId())
                 .restaurantId(order.getRestaurantId())
                 .status(order.getStatus())
-                .items(items) // Usa la lista deserializzata
+                .items(items)
                 .totalAmount(order.getTotalAmount())
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())
                 .build();
     }
+
 
     // Metodo per trovare un ordine (utile per il frontend dopo)
     @Transactional(readOnly = true)
