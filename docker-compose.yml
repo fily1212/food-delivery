@@ -11,7 +11,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:
-      - backend
+      - fooddelivery-net
 
   order-service:
     build: ./order-service
@@ -29,24 +29,43 @@ services:
       - restaurant-service
       - accounting-service
     networks:
-      - backend
+      - fooddelivery-net
 
   restaurant-service:
     build: ./restaurant-service
     ports:
       - "8091:8091"
     networks:
-      - backend
+      - fooddelivery-net
 
   accounting-service:
     build: ./accounting-service
     ports:
       - "8092:8092"
     networks:
-      - backend
+      - fooddelivery-net
 
+  rabbitmq:
+    image: rabbitmq:3.11-management # Usa immagine con UI di management inclusa
+    container_name: rabbitmq_container
+    ports:
+      - "5672:5672" # Porta AMQP standard
+      - "15672:15672" # Porta per la Management UI
+    environment:
+    # Credenziali di default: guest/guest (ok per sviluppo locale)
+     RABBITMQ_DEFAULT_USER: user
+     RABBITMQ_DEFAULT_PASS: password
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq/ # Volume per persistere stato (config, messaggi non acked)
+    networks:
+      - fooddelivery-net
 volumes:
   pgdata:
+    driver: local
+
+  rabbitmq_data:
+    driver: local
 
 networks:
-  backend:
+  fooddelivery-net:
+    driver: bridge
