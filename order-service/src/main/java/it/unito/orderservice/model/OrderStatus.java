@@ -8,6 +8,6 @@ public enum OrderStatus {
     COMPLETED,        // Ordine completato (ipotetico stato finale)
     REJECTED_RESTAURANT, // Ristorante non valido/chiuso
     REJECTED_PAYMENT,   // Pagamento fallito
-    REJECTED_CUSTOMER, // Cliente non valido (aggiungere se necessario)
+    REJECTED_CUSTOMER, // Cliente non valido
     FAILED             // Errore generico
 }
