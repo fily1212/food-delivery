@@ -1,15 +1,14 @@
 package it.unito.orderservice.service;
 
-import it.unito.orderservice.dto.CreateOrderRequest;
-import it.unito.orderservice.dto.OrderDTO;
-import it.unito.orderservice.dto.OrderItemDTO;
+import it.unito.orderservice.dto.*;
 import it.unito.orderservice.model.Order;
 import it.unito.orderservice.model.OrderItem;
 import it.unito.orderservice.model.OrderStatus;
 import it.unito.orderservice.repository.OrderRepository;
-import com.fasterxml.jackson.databind.ObjectMapper; // Per serializzare items
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,10 +25,16 @@ import java.util.stream.Collectors;
 public class OrderService {
 
     private final OrderRepository orderRepository;
-    private final ObjectMapper objectMapper; // Spring Boot configura un bean ObjectMapper
     private final WebClient restaurantWebClient; // Inietta i WebClient Beans
     private final WebClient accountingWebClient;
+    private final RabbitTemplate rabbitTemplate; // Inietta RabbitTemplate
 
+
+    @Value("${app.rabbitmq.exchange}")
+    private String exchangeName;
+
+    @Value("${app.rabbitmq.routingkey.prepare-ticket}")
+    private String prepareTicketRoutingKey;
 
     @Transactional
     public OrderDTO createOrder(CreateOrderRequest request) {
@@ -75,8 +80,36 @@ public class OrderService {
         // 3. Aggiorna stato ordine in base alle risposte
         OrderStatus finalStatus;
         if (restaurantValid && paymentAuthorized) {
-            finalStatus = OrderStatus.APPROVED_PENDING_KITCHEN; // Prossimo step: inviare a cucina
-            log.info("Order {} validated successfully. Status -> {}", savedOrder.getId(), finalStatus);
+            try {
+                // Mappa DTO per messaggio RabbitMQ
+                List<OrderItemDTO> itemDTOs = savedOrder.getItems().stream().map(item ->
+                        new OrderItemDTO(item.getProductName(), item.getQuantity(), item.getUnitPrice())
+                ).toList();
+
+                List<OrderItemMessageDTO> itemMessages = itemDTOs.stream()
+                        .map(item -> new OrderItemMessageDTO(item.getProductName(), item.getQuantity())) // Usa productName come id logico
+                        .collect(Collectors.toList());
+
+                PrepareTicketCommand command = new PrepareTicketCommand(
+                        savedOrder.getId(),
+                        savedOrder.getRestaurantId(),
+                        itemMessages
+                );
+
+                log.info("Order {} approved. Publishing PrepareTicketCommand to exchange '{}' with key '{}'",
+                        savedOrder.getId(), exchangeName, prepareTicketRoutingKey);
+
+                // Invia il messaggio all'exchange con la routing key specificata
+                rabbitTemplate.convertAndSend(exchangeName, prepareTicketRoutingKey, command);
+
+                finalStatus = OrderStatus.SENT_TO_KITCHEN; // Aggiorna stato dopo invio
+                log.info("Order {} status updated to {}", savedOrder.getId(), finalStatus);
+
+            } catch (Exception e) {
+                // Gestione errore invio messaggio o deserializzazione
+                log.error("Failed to publish PrepareTicketCommand for order {}. Setting status to FAILED.", savedOrder.getId(), e);
+                finalStatus = OrderStatus.FAILED; // Stato di errore generico
+            }
         } else if (!restaurantValid) {
             finalStatus = OrderStatus.REJECTED_RESTAURANT;
             log.error("Order {} rejected: Restaurant validation failed.", savedOrder.getId());

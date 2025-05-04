@@ -19,6 +19,18 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  rabbitmq:
+    host: localhost # Per test locale fuori da Docker
+    port: 5672
+    username: guest
+    password: guest
+
+app:
+  rabbitmq:
+    exchange: fooddelivery.exchange
+    routingkey:
+      prepare-ticket: order.ticket.prepare
+
 
 services:
   restaurant:

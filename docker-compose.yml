@@ -59,6 +59,33 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq/ # Volume per persistere stato (config, messaggi non acked)
     networks:
       - fooddelivery-net
+
+  kitchen-service:
+    build:
+      context: ./kitchen-service
+    ports:
+      - "8093:8093"
+    environment:
+      SERVER_PORT: 8093
+      SPRING_APPLICATION_NAME: kitchen-service
+      # Configurazione RabbitMQ (verrà usata da Spring AMQP)
+      SPRING_RABBITMQ_HOST: rabbitmq # Nome del servizio RabbitMQ in Compose
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: user
+      SPRING_RABBITMQ_PASSWORD: password
+      SPRING_DATASOURCE_URL: jdbc:h2:mem:kitchendb;DB_CLOSE_DELAY=-1
+      SPRING_DATASOURCE_DRIVERCLASSNAME: org.h2.Driver
+      SPRING_DATASOURCE_USERNAME: sa
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_JPA_DATABASE-PLATFORM: org.hibernate.dialect.H2Dialect
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_H2_CONSOLE_ENABLED: true # Abilita console H2 per debug
+      SPRING_H2_CONSOLE_PATH: /h2-console
+    depends_on:
+      - rabbitmq
+    networks:
+      - fooddelivery-net
+
 volumes:
   pgdata:
     driver: local
