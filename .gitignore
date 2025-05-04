@@ -1,0 +1,59 @@
+# ------------------------
+# Maven
+# ------------------------
+/target/
+/**/target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# Eclipse/IntelliJ
+*.iml
+.idea/
+*.ipr
+*.iws
+/out/
+.classpath
+.project
+.settings/
+
+# Logs
+*.log
+logs/
+**/logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Spring Boot
+spring.log
+
+# Lombok
+lombok.config
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+
+# Test reports
+/test-output/
+/surefire-reports/
+/**/surefire-reports/
+
+# Node (in caso di frontend integrato)
+node_modules/
+dist/
+build/
+
+# Docker
+**/Dockerfile
+**/.dockerignore
+docker-compose.override.yml
+.docker/
+
+# Kubernetes
+k8s/*.yaml
+
+# Environments / config
+.env
+.
