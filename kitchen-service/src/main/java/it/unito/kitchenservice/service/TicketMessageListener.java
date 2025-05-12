@@ -1,4 +1,4 @@
-package it.unito.kitchenservice.dto;
+package it.unito.kitchenservice.service;
 
 import it.unito.kitchenservice.model.OrderItem;
 import it.unito.kitchenservice.model.Ticket;
@@ -21,9 +21,8 @@ public class TicketMessageListener {
 
     private final TicketRepository ticketRepository;
 
-    public static final String KITCHEN_QUEUE_NAME = "q.kitchen.prepare-ticket";
 
-    @RabbitListener(queues = KITCHEN_QUEUE_NAME)
+    @RabbitListener(queues = "${app.rabbitmq.queue.prepare-ticket}")
     @Transactional
     public void handlePrepareTicketCommand(PrepareTicketCommand command) {
         log.info("Received PrepareTicketCommand for order ID: {}", command.getOrderId());

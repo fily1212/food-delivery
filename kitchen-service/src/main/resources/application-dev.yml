@@ -39,6 +39,7 @@ logging:
 app:
   rabbitmq:
     exchange: fooddelivery.exchange
-    queue: q.kitchen.prepare-ticket
+    queue:
+      prepare-ticket: kitchen.prepare-ticket
     routingkey:
       prepare-ticket: rk.order.prepare-ticket

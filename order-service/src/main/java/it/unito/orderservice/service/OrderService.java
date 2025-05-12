@@ -100,6 +100,12 @@ public class OrderService {
                         savedOrder.getId(), exchangeName, prepareTicketRoutingKey);
 
                 // Invia il messaggio all'exchange con la routing key specificata
+                rabbitTemplate.setMandatory(true);          // notifica se non c’è una route
+                rabbitTemplate.setReturnsCallback(ret ->    // logga eventuali drop
+                        log.error("Messaggio UNROUTED: {}", ret));
+                rabbitTemplate.setConfirmCallback((cd,ack,c) ->
+                        log.info("Broker ack? {}  cause: {}", ack, c));
+
                 rabbitTemplate.convertAndSend(exchangeName, prepareTicketRoutingKey, command);
 
                 finalStatus = OrderStatus.SENT_TO_KITCHEN; // Aggiorna stato dopo invio

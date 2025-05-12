@@ -2,7 +2,7 @@ package it.unito.kitchenservice.config;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.unito.kitchenservice.dto.TicketMessageListener;
+import it.unito.kitchenservice.service.TicketMessageListener;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -13,17 +13,19 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitMQConfig {
 
-    @Value("${app.rabbitmq.exchange:fooddelivery.exchange}") // Default se non in properties
+
+    @Value("${app.rabbitmq.exchange}")
     private String exchangeName;
 
-    @Value("${app.rabbitmq.routingkey.prepare-ticket:order.ticket.prepare}") // Default
+    @Value("${app.rabbitmq.routingkey.prepare-ticket}")
     private String prepareTicketRoutingKey;
 
-    // 1. Definisce la coda per Kitchen Service
+    @Value("${app.rabbitmq.queue.prepare-ticket}")
+    private String prepareTicketQueue;
+
     @Bean
-    public Queue kitchenQueue() {
-        // (name, durable, exclusive, autoDelete)
-        return new Queue(TicketMessageListener.KITCHEN_QUEUE_NAME, true, false, false);
+    Queue kitchenQueue() {
+        return new Queue(prepareTicketQueue, true);
     }
 
     // 2. Definisce l'exchange (deve corrispondere a quello usato da order-service)
@@ -50,13 +52,4 @@ public class RabbitMQConfig {
         return new Jackson2JsonMessageConverter(objectMapper);
     }
 
-    // Opzionale: Configurare l'ObjectMapper per essere più robusto
-    // @Bean
-    // public ObjectMapper objectMapper() {
-    //     ObjectMapper mapper = new ObjectMapper();
-    //     mapper.findAndRegisterModules(); // Registra moduli come JavaTimeModule
-    //     // Aggiungere configurazioni desiderate (es. ignorare proprietà sconosciute)
-    //     mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    //     return mapper;
-    // }
 }

@@ -29,7 +29,7 @@ app:
   rabbitmq:
     exchange: fooddelivery.exchange
     routingkey:
-      prepare-ticket: order.ticket.prepare
+      prepare-ticket: rk.order.prepare-ticket
 
 
 services:
