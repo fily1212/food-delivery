@@ -30,7 +30,7 @@ public class Order {
     private Long restaurantId;
 
     @Enumerated(EnumType.STRING) // Salva l'enum come stringa nel DB
-    @Column(nullable = false)
+    @Column(name = "status", nullable = false)
     private OrderStatus status;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)

@@ -28,8 +28,11 @@ spring:
 app:
   rabbitmq:
     exchange: fooddelivery.exchange
+    queue:
+      ready-ticket: order.ready-ticket
     routingkey:
       prepare-ticket: rk.order.prepare-ticket
+      ready-ticket: rk.kitchen.ready-ticket
 
 
 services:

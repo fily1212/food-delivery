@@ -43,3 +43,4 @@ app:
       prepare-ticket: kitchen.prepare-ticket
     routingkey:
       prepare-ticket: rk.order.prepare-ticket
+      ready-ticket: rk.kitchen.ready-ticket

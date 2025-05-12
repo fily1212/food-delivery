@@ -9,5 +9,6 @@ public enum OrderStatus {
     REJECTED_RESTAURANT, // Ristorante non valido/chiuso
     REJECTED_PAYMENT,   // Pagamento fallito
     REJECTED_CUSTOMER, // Cliente non valido
+    READY_FOR_PICKUP, // Ordine pronto per il ritiro
     FAILED             // Errore generico
 }

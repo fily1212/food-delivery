@@ -1,8 +1,7 @@
 package it.unito.orderservice.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.amqp.core.DirectExchange;
-import org.springframework.amqp.core.Exchange;
+import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
@@ -17,9 +16,27 @@ public class RabbitMQConfig {
     @Value("${app.rabbitmq.exchange}")
     private String exchangeName;
 
+    @Value("${app.rabbitmq.routingkey.ready-ticket}")
+    private String readyTicketRoutingKey;
+
+    @Value("${app.rabbitmq.queue.ready-ticket}")
+    private String readyTicketQueue;
+
     @Bean
     public Exchange foodDeliveryExchange() {
         return new DirectExchange(exchangeName, true, false);
+    }
+
+    @Bean
+    Queue readyTicketQueue() {
+        return new Queue(readyTicketQueue, true);
+    }
+    @Bean
+    public Binding readyTicketBinding(Queue readyTicketQueue, Exchange foodDeliveryExchange) {
+        return BindingBuilder.bind(readyTicketQueue)
+                .to(foodDeliveryExchange)
+                .with(readyTicketRoutingKey) // La chiave usata da order-service per inviare
+                .noargs(); // Necessario per DirectExchange
     }
 
     @Bean
