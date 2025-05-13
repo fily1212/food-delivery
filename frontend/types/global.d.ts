@@ -74,6 +74,20 @@ declare global {
         updatedAt: string; // ISO Date string
     }
 
+    export interface TicketItemDTO {
+        id: number;
+        productName: string;
+        quantity: number;
+    }
+
+    export interface TicketDTO {
+        orderId: number;
+        restaurantId: number;
+        status: string;          // puoi fare enum se preferisci
+        items: TicketItemDTO[];
+        createdAt: string;
+    }
+
     export class RequestError extends Error {
         status?: number;
         details?: any;

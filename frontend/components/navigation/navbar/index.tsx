@@ -1,10 +1,15 @@
+"use client";
+
 import React from 'react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent} from "@/components/ui/dropdown-menu";
+import { Input } from '@/components/ui/input';
+import { useCustomer } from '@/context/CustomerContext';
 
-const Navbar = async () => {
+const Navbar = () => {
 
+    const { customerId, setCustomerId } = useCustomer();
     return (
         <nav
             className="flex-between background-light900_dark200 fixed z-50 w-full p-6 shadow-light-300 dark:shadow-none sm:px-12">
@@ -14,8 +19,22 @@ const Navbar = async () => {
                 </p>
             </Link>
 
-            <div className="flex-between gap-5">
+            <Link href="/kitchen/orders" className="btn !py-1">
+                Cucina
+            </Link>
 
+
+            <div className="flex-between gap-5">
+                <div className="flex items-center gap-2">
+                    <span className="text-sm opacity-70">ID:</span>
+                    <Input
+                        type="number"
+                        value={customerId ?? ""}
+                        onChange={(e) => setCustomerId(Number(e.target.value))}
+                        className="h-8 w-24"
+                        placeholder="cliente"
+                    />
+                </div>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Avatar>

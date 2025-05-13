@@ -1,23 +1,18 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 import { productsByRestaurant, restaurants as allRestaurants } from "@/lib/data";
-import { createOrder, getOrderById } from "@/lib/api";
+import { getOrderById } from "@/lib/api";
 
 import { ProductCard } from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { QuantityInput } from "@/components/QuantityInput";
-
 import { toast } from "sonner"; // 🔔 Sonner toast
 
-import { Loader2, CheckCircle, XCircle, ShoppingCart, ArrowLeft } from "lucide-react";
+import { Loader2,  ArrowLeft } from "lucide-react";
+import {OrderSidebarClient} from "@/components/OrderSidebarClient";
 
-const CUSTOMER_ID = 1; // Simulazione di un ID cliente fisso per il test
 
 export default function RestaurantPage() {
     const params = useParams();
@@ -32,6 +27,7 @@ export default function RestaurantPage() {
     const [orderResult, setOrderResult] = useState<OrderDTO | null>(null);
     const [orderError, setOrderError] = useState<string | null>(null);
     const [isPollingStatus, setIsPollingStatus] = useState(false);
+
 
     useEffect(() => {
         const currentRestaurant = allRestaurants.find((r) => r.id === restaurantId);
@@ -70,9 +66,6 @@ export default function RestaurantPage() {
         });
     };
 
-    const totalAmount = useMemo(() => {
-        return cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
-    }, [cart]);
 
     const pollOrderStatus = async (orderId: number) => {
         setIsPollingStatus(true);
@@ -110,48 +103,6 @@ export default function RestaurantPage() {
             clearInterval(intervalId);
             setIsPollingStatus(false);
         };
-    };
-
-    const handleCreateOrder = async () => {
-        if (cart.length === 0) {
-            toast.error("Carrello vuoto. Aggiungi prodotti per ordinare.");
-            return;
-        }
-
-        setIsLoadingOrder(true);
-        setOrderError(null);
-        setOrderResult(null);
-
-        const orderPayload: CreateOrderRequest = {
-            customerId: CUSTOMER_ID,
-            restaurantId: restaurantId,
-            items: cart.map((item) => ({
-                productName: item.productName,
-                quantity: item.quantity,
-                unitPrice: item.unitPrice,
-            })),
-        };
-
-        const response = await createOrder(orderPayload);
-
-        if (response.success) {
-            const orderData = response.data as OrderDTO;
-            setOrderResult(orderData);
-
-            toast.success(`Ordine #${orderData.id} inviato! Stato iniziale: ${orderData.status}`);
-
-            setCart([]);
-
-            if (orderData.status === "PENDING_VALIDATION" || orderData.status === "SENT_TO_KITCHEN") {
-                await pollOrderStatus(orderData.id);
-            }
-        } else {
-            console.error("Errore creazione ordine:", response.error);
-            const errorMessage = `${response.error?.message}${response.error?.details ? ` (Dettagli: ${JSON.stringify(response.error.details)})` : ""}`;
-            setOrderError(errorMessage);
-            toast.error(`Errore Ordine (Status: ${response.status}): ${errorMessage}`);
-        }
-        setIsLoadingOrder(false);
     };
 
     if (!restaurant) {
@@ -194,96 +145,10 @@ export default function RestaurantPage() {
                         <p className="text-muted-foreground">Nessun prodotto disponibile per questo ristorante al momento.</p>
                     )}
                 </section>
-
-                <aside className="lg:col-span-1 sticky top-8 space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center text-xl">
-                                <ShoppingCart className="mr-3 h-6 w-6" /> Il Tuo Carrello
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {cart.length === 0 ? (
-                                <p className="text-muted-foreground">Il carrello è vuoto.</p>
-                            ) : (
-                                <div className="space-y-4">
-                                    {cart.map(item => (
-                                        <div key={item.productId} className="flex justify-between items-start">
-                                            <div>
-                                                <p className="font-medium">{item.productName}</p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    €{item.unitPrice.toFixed(2)} x {item.quantity} = €{(item.unitPrice * item.quantity).toFixed(2)}
-                                                </p>
-                                            </div>
-                                            <QuantityInput
-                                                quantity={item.quantity}
-                                                onQuantityChange={(newQuantity) => {
-                                                    const product = availableProducts.find(p => p.id === item.productId);
-                                                    if (product) handleUpdateCart(product, newQuantity);
-                                                }}
-                                                min={0}
-                                            />
-                                        </div>
-                                    ))}
-                                    <Separator className="my-4" />
-                                    <div className="flex justify-between items-center font-semibold text-lg">
-                                        <p>Totale:</p>
-                                        <p>€{totalAmount.toFixed(2)}</p>
-                                    </div>
-                                </div>
-                            )}
-                        </CardContent>
-                        {cart.length > 0 && (
-                            <CardFooter>
-                                <Button
-                                    onClick={handleCreateOrder}
-                                    disabled={isLoadingOrder || isPollingStatus}
-                                    className="w-full text-base py-3"
-                                    size="lg"
-                                >
-                                    {isLoadingOrder ? (
-                                        <> <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Elaborazione... </>
-                                    ) : isPollingStatus ? (
-                                        <> <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Controllo Stato... </>
-                                    ) : "Conferma Ordine"}
-                                </Button>
-                            </CardFooter>
-                        )}
-                    </Card>
-
-                    {orderError && !orderResult && ( // Show error only if there's no successful result yet
-                        <Alert variant="destructive">
-                            <XCircle className="h-5 w-5" />
-                            <AlertTitle>Errore Ordine</AlertTitle>
-                            <AlertDescription>{orderError}</AlertDescription>
-                        </Alert>
-                    )}
-
-                    {orderResult && (
-                        <Alert variant={orderResult.status === "FAILED" || orderResult.status === "CANCELLED" ? "destructive" : "default"}>
-                            <CheckCircle className="h-5 w-5" />
-                            <AlertTitle>
-                                {orderResult.status === "FAILED" || orderResult.status === "CANCELLED" ? "Ordine Non Riuscito" : "Dettagli Ordine"}
-                            </AlertTitle>
-                            <AlertDescription>
-                                <p>ID Ordine: <strong>#{orderResult.id}</strong></p>
-                                <p>Stato: <strong className={
-                                    orderResult.status === "FAILED" || orderResult.status === "CANCELLED" ? "text-red-600" :
-                                        orderResult.status === "DELIVERED" || orderResult.status === "READY_FOR_PICKUP" ? "text-green-600" : ""
-                                }>{orderResult.status}</strong></p>
-                                <p>Totale: €{orderResult.totalAmount.toFixed(2)}</p>
-                                <p className="text-xs mt-2">Creato il: {new Date(orderResult.createdAt).toLocaleString()}</p>
-                                <p className="text-xs">Ultimo Aggiornamento: {new Date(orderResult.updatedAt).toLocaleString()}</p>
-                                {isPollingStatus && orderResult.status !== "DELIVERED" && orderResult.status !== "READY_FOR_PICKUP" && orderResult.status !== "CANCELLED" && orderResult.status !== "FAILED" && (
-                                    <div className="flex items-center text-sm mt-2 text-blue-600">
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Aggiornamento stato in corso...
-                                    </div>
-                                )}
-                            </AlertDescription>
-                        </Alert>
-                    )}
-                </aside>
+                <OrderSidebarClient restaurantId={restaurantId}
+                                    cart={cart} setCart={setCart}
+                                    availableProducts={availableProducts} onUpdateCart={handleUpdateCart}
+                                     />
             </div>
         </main>
     );

@@ -24,7 +24,6 @@ export function RestaurantSelector({ restaurants }: RestaurantSelectorProps) {
                                 <CardDescription>ID: {restaurant.id}</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                {/* Potresti aggiungere più dettagli qui, es. tipo di cucina */}
                                 <p className="text-sm text-muted-foreground">Pronto per i tuoi ordini!</p>
                             </CardContent>
                             <CardFooter>

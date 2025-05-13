@@ -4,21 +4,20 @@ import { useState, useMemo, useEffect } from "react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
-
 import { CartSection } from "./order-sidebar/CartSection";
 import { OrderErrorAlert } from "./order-sidebar/OrderErrorAlert";
 import { OrderStatusAlert } from "./order-sidebar/OrderStatusAlert";
 
 import { createOrder, getOrderById } from "@/lib/api";
+import {useCustomer} from "@/context/CustomerContext";
 
-const CUSTOMER_ID = 10;
 
 interface OrderSidebarClientProps {
     restaurantId: number;
     cart: CartItem[];
+    setCart: (cart: CartItem[]) => void;
     availableProducts: Product[];
     onUpdateCart: (product: Product, newQty: number) => void;
-    onOrderCreated: (order: OrderDTO) => void;
     initialOrderResult?: OrderDTO | null;
     isStandaloneOrderView?: boolean;
 }
@@ -26,9 +25,9 @@ interface OrderSidebarClientProps {
 export function OrderSidebarClient({
                                        restaurantId,
                                        cart,
+                                       setCart,
                                        availableProducts,
                                        onUpdateCart,
-                                       onOrderCreated,
                                        initialOrderResult = null,
                                        isStandaloneOrderView = false,
                                    }: OrderSidebarClientProps) {
@@ -37,6 +36,8 @@ export function OrderSidebarClient({
     const [currentOrder, setCurrentOrder] = useState<OrderDTO | null>(initialOrderResult);
     const [orderError, setOrderError] = useState<string | null>(null);
     const [isPolling, setIsPolling] = useState(false);
+
+    const { customerId, setCustomerId } = useCustomer();
 
     const totalAmount = useMemo(
         () => cart.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0),
@@ -109,7 +110,7 @@ export function OrderSidebarClient({
         setCurrentOrder(null);
 
         const payload: CreateOrderRequest = {
-            customerId: CUSTOMER_ID,
+            customerId: customerId,
             restaurantId,
             items: cart.map(i => ({
                 productName: i.productName,
@@ -123,7 +124,6 @@ export function OrderSidebarClient({
         if (res.success) {
             const order = res.data as OrderDTO;
             setCurrentOrder(order);
-            onOrderCreated(order);
             toast.success(`Ordine #${order.id} inviato! Stato iniziale: ${order.status}`);
 
             if (["PENDING_VALIDATION", "SENT_TO_KITCHEN"].includes(order.status)) pollOrderStatus(order.id);
@@ -134,7 +134,8 @@ export function OrderSidebarClient({
             setOrderError(msg);
             toast.error(`Errore ordine (status ${res.status}): ${msg}`);
         }
-
+        setCart([]);
+        setIsPolling(false);
         setIsLoadingOrder(false);
     };
 

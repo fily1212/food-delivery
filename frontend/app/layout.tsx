@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/navigation/navbar";
 import React from "react";
+import {CustomerProvider} from "@/context/CustomerContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,7 +15,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
+const metadata: Metadata = {
   title: "Ordina",
   description: "App per ordinare cibo",
 };
@@ -30,7 +31,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-
+        <CustomerProvider>
           <main className="min-h-screen ">
               <Navbar />
               <div className="flex">
@@ -41,6 +42,7 @@ export default function RootLayout({
                   </section>
               </div>
           </main>
+        </CustomerProvider>
       </body>
     </html>
   );

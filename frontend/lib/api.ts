@@ -34,3 +34,20 @@ export async function getOrderById(
     };
     return fetchHandler<OrderDTO>(url, options);
 }
+
+
+
+const KITCHEN_SERVICE_BASE_URL =
+    process.env.NEXT_PUBLIC_KITCHEN_SERVICE_BASE_URL || "http://localhost:8093";
+
+export async function fetchTickets(): Promise<ActionResponse<TicketDTO[]>> {
+    const url = `${KITCHEN_SERVICE_BASE_URL}/tickets`;
+    return fetchHandler<TicketDTO[]>(url, { method: "GET" });
+}
+
+export async function markTicketReady(
+    orderId: number
+): Promise<ActionResponse<void>> {
+    const url = `${KITCHEN_SERVICE_BASE_URL}/tickets/ready/${orderId}`;
+    return fetchHandler<void>(url, { method: "GET" });
+}
