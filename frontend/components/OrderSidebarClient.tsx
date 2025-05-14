@@ -35,7 +35,6 @@ export function OrderSidebarClient({
     const [isLoadingOrder, setIsLoadingOrder] = useState(false);
     const [currentOrder, setCurrentOrder] = useState<OrderDTO | null>(initialOrderResult);
     const [orderError, setOrderError] = useState<string | null>(null);
-    const [isPolling, setIsPolling] = useState(false);
 
     const { customerId, setCustomerId } = useCustomer();
 
@@ -44,59 +43,6 @@ export function OrderSidebarClient({
         [cart]
     );
 
-    /* --------------------------- polling ----------------------------- */
-    useEffect(() => {
-        if (!initialOrderResult) return;
-
-        const shouldPoll =
-            (isStandaloneOrderView &&
-                ["PENDING_VALIDATION", "SENT_TO_KITCHEN", "PREPARING"].includes(
-                    initialOrderResult.status
-                )) ||
-            (!isStandaloneOrderView &&
-                !["DELIVERED", "READY_FOR_PICKUP", "CANCELLED", "FAILED"].includes(
-                    initialOrderResult.status
-                ));
-
-        if (shouldPoll) pollOrderStatus(initialOrderResult.id);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [initialOrderResult, isStandaloneOrderView]);
-
-    const pollOrderStatus = async (orderId: number) => {
-        if (isPolling) return;
-        setIsPolling(true);
-
-        if (!isStandaloneOrderView) toast.info(`Controllo stato ordine #${orderId}…`);
-
-        const interval = setInterval(async () => {
-            const res = await getOrderById(orderId);
-
-            if (res.success) {
-                const updated = res.data as OrderDTO;
-                setCurrentOrder(updated);
-                toast.info(`Ordine #${updated.id} aggiornato – stato: ${updated.status}`);
-
-                if (["READY_FOR_PICKUP", "DELIVERED", "CANCELLED", "FAILED"].includes(updated.status)) {
-                    clearInterval(interval);
-                    setIsPolling(false);
-
-                    toast[updated.status === "DELIVERED" || updated.status === "READY_FOR_PICKUP"
-                        ? "success"
-                        : "warning"](
-                        `Ordine #${updated.id} finalizzato – ${updated.status}`
-                    );
-                }
-            } else {
-                console.error("Polling error:", res.error?.message);
-                toast.error(`Errore aggiornamento stato #${orderId}: ${res.error?.message}`);
-
-                if (res.status === 404) {
-                    clearInterval(interval);
-                    setIsPolling(false);
-                }
-            }
-        }, 5000);
-    };
 
     /* ------------------------ create order --------------------------- */
     const handleCreateOrder = async () => {
@@ -126,7 +72,6 @@ export function OrderSidebarClient({
             setCurrentOrder(order);
             toast.success(`Ordine #${order.id} inviato! Stato iniziale: ${order.status}`);
 
-            if (["PENDING_VALIDATION", "SENT_TO_KITCHEN"].includes(order.status)) pollOrderStatus(order.id);
         } else {
             const msg = `${res.error?.message}${
                 res.error?.details ? ` (Dettagli: ${JSON.stringify(res.error.details)})` : ""
@@ -135,7 +80,6 @@ export function OrderSidebarClient({
             toast.error(`Errore ordine (status ${res.status}): ${msg}`);
         }
         setCart([]);
-        setIsPolling(false);
         setIsLoadingOrder(false);
     };
 
@@ -157,7 +101,6 @@ export function OrderSidebarClient({
                         availableProducts={availableProducts}
                         totalAmount={totalAmount}
                         isLoading={isLoadingOrder}
-                        isPolling={isPolling}
                         onUpdateCart={onUpdateCart}
                         onCreateOrder={handleCreateOrder}
                     />
@@ -171,7 +114,6 @@ export function OrderSidebarClient({
             {currentOrder && (
                 <OrderStatusAlert
                     order={currentOrder}
-                    isPolling={isPolling}
                 />
             )}
         </aside>

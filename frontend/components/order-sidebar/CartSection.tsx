@@ -11,7 +11,6 @@ interface CartSectionProps {
     availableProducts: Product[];
     totalAmount: number;
     isLoading: boolean;
-    isPolling: boolean;
     onUpdateCart: (product: Product, newQty: number) => void;
     onCreateOrder: () => void;
 }
@@ -21,7 +20,6 @@ export function CartSection({
                                 availableProducts,
                                 totalAmount,
                                 isLoading,
-                                isPolling,
                                 onUpdateCart,
                                 onCreateOrder,
                             }: CartSectionProps) {
@@ -56,7 +54,7 @@ export function CartSection({
             <CardFooter>
                 <Button
                     onClick={onCreateOrder}
-                    disabled={isLoading || isPolling}
+                    disabled={isLoading}
                     className="w-full text-base py-3"
                     size="lg"
                 >
@@ -64,11 +62,6 @@ export function CartSection({
                         <>
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                             Elaborazione…
-                        </>
-                    ) : isPolling ? (
-                        <>
-                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                            Controllo Stato…
                         </>
                     ) : (
                         "Conferma Ordine"

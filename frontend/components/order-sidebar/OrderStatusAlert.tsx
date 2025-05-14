@@ -5,13 +5,12 @@ import { CheckCircle, Loader2 } from "lucide-react";
 
 interface OrderStatusAlertProps {
     order: OrderDTO;
-    isPolling: boolean;
 }
 
 const failStates = ["FAILED", "CANCELLED"];
 const successStates = ["DELIVERED", "READY_FOR_PICKUP"];
 
-export function OrderStatusAlert({ order, isPolling }: OrderStatusAlertProps) {
+export function OrderStatusAlert({ order }: OrderStatusAlertProps) {
     const variant = failStates.includes(order.status) ? "destructive" : "default";
 
     return (
@@ -57,12 +56,6 @@ export function OrderStatusAlert({ order, isPolling }: OrderStatusAlertProps) {
                     Ultimo Aggiornamento: {new Date(order.updatedAt).toLocaleString()}
                 </p>
 
-                {isPolling && ![...successStates, ...failStates].includes(order.status) && (
-                    <div className="flex items-center text-sm mt-2 text-blue-600">
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Aggiornamento stato in corso…
-                    </div>
-                )}
             </AlertDescription>
         </Alert>
     );

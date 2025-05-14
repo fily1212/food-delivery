@@ -66,45 +66,6 @@ export default function RestaurantPage() {
         });
     };
 
-
-    const pollOrderStatus = async (orderId: number) => {
-        setIsPollingStatus(true);
-        toast.info(`Controllo stato ordine #${orderId}...`);
-
-        const intervalId = setInterval(async () => {
-            const response = await getOrderById(orderId);
-            if (response.success) {
-                const currentOrder = response.data as OrderDTO;
-                setOrderResult(currentOrder);
-
-                toast.info(`Ordine #${currentOrder.id} aggiornato – stato: ${currentOrder.status}`);
-
-                if (["SENT_TO_KITCHEN", "PREPARING", "READY_FOR_PICKUP", "DELIVERED", "CANCELLED", "FAILED"].includes(currentOrder.status)) {
-                    clearInterval(intervalId);
-                    setIsPollingStatus(false);
-
-                    if (currentOrder.status === "DELIVERED" || currentOrder.status === "READY_FOR_PICKUP") {
-                        toast.success(`Ordine #${currentOrder.id} finalizzato – ${currentOrder.status}`);
-                    } else {
-                        toast(`Ordine #${currentOrder.id} finalizzato – ${currentOrder.status}`);
-                    }
-                }
-            } else {
-                console.error("Errore durante il polling dello stato dell'ordine:", response.error);
-                toast.error(`Errore aggiornamento stato ordine #${orderId}: ${response.error?.message}`);
-                if (response.status === 404) {
-                    clearInterval(intervalId);
-                    setIsPollingStatus(false);
-                }
-            }
-        }, 5000);
-
-        return () => {
-            clearInterval(intervalId);
-            setIsPollingStatus(false);
-        };
-    };
-
     if (!restaurant) {
         return (
             <div className="flex justify-center items-center min-h-screen">
