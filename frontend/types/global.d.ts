@@ -88,6 +88,7 @@ declare global {
         createdAt: string;
     }
 
+
     export class RequestError extends Error {
         status?: number;
         details?: any;

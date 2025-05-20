@@ -74,7 +74,7 @@ export async function fetchHandler<T>(
         clearTimeout(id); // Ensure timeout is cleared on any error
         const error = isError(err) ? err : new Error("An unknown error occurred during fetch.");
 
-        let errorDetails: { message: string };
+        let errorDetails: { message: string; details?: Record<string, string[]> };
         let status = 500; // Default status for client-side errors
 
         if (error.name === "AbortError") {
