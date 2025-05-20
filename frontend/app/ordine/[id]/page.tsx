@@ -90,9 +90,9 @@ export default function OrderStatusPage() {
                 <OrderSidebarClient
                     restaurantId={order.restaurantId} // Required prop, but not crucial for display-only
                     cart={[]} // Empty cart as we are not ordering
+                    setCart={() => {}}// No-op
                     availableProducts={[]} // Not needed for display
                     onUpdateCart={() => {}} // No-op
-                    onOrderCreated={() => {}} // No-op
                     initialOrderResult={order}
                     isStandaloneOrderView={true}
                 />

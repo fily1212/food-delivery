@@ -15,6 +15,7 @@ public class WebConfig {
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**") // Applica a tutti gli endpoint ("/**")
                         .allowedOrigins("http://localhost:3000") // Permette richieste da questo origine (frontend Next.js)
+                        .allowedOrigins("http://192.168.49.2:31830")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Metodi HTTP permessi
                         .allowedHeaders("*") // Headers permessi
                         .allowCredentials(true); // Permette cookies/auth headers se usati

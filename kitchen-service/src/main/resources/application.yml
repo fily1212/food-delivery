@@ -9,19 +9,19 @@ spring:
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
-    driver-class-name: org.h2.Driver
+    driver-class-name: org.h2.Driver      # se passi ad un RDBMS vero cambia driver e dialect
 
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false                       # in prod di solito lo disattivi
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.H2Dialect
 
   rabbitmq:
-    host: ${SPRING_RABBITMQ_HOST:localhost}
+    host: ${SPRING_RABBITMQ_HOST:rabbitmq}
     port: ${SPRING_RABBITMQ_PORT:5672}
     username: ${SPRING_RABBITMQ_USERNAME}
     password: ${SPRING_RABBITMQ_PASSWORD}
@@ -29,11 +29,13 @@ spring:
 logging:
   level:
     root: INFO
-    it.unito.kitchenservice: DEBUG
+    it.unito.kitchenservice: INFO         # DEBUG solo quando serve
 
 app:
   rabbitmq:
-    exchange: ${APP_RABBITMQ_EXCHANGE}
-    queue: ${APP_RABBITMQ_QUEUE}
+    exchange: ${APP_RABBITMQ_EXCHANGE:fooddelivery.exchange}
+    queue:
+      prepare-ticket: ${APP_RABBITMQ_QUEUE_PREPARE_TICKET:kitchen.prepare-ticket}
     routingkey:
-      prepare-ticket: ${APP_RABBITMQ_ROUTINGKEY_PREPARE_TICKET}
+      prepare-ticket: ${APP_RABBITMQ_ROUTINGKEY_PREPARE_TICKET:rk.order.prepare-ticket}
+      ready-ticket: ${APP_RABBITMQ_ROUTINGKEY_READY_TICKET:rk.kitchen.ready-ticket}

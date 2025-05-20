@@ -1,32 +1,47 @@
 server:
-  port: 8090
+  port: ${SERVER_PORT:8090}
 
 spring:
   application:
     name: order-service
 
   datasource:
-    url: jdbc:postgresql://postgres:5432/order_db
-    username: user
-    password: password
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: update # Usa 'validate' o 'none' in produzione
-    show-sql: true
+      ddl-auto: update
+    show-sql: ${SPRING_JPA_SHOW_SQL:false}     # in dev true, in prod meglio false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: ${SPRING_JPA_FORMAT_SQL:true}
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
-logging:
-  level:
-    root: INFO
-    it.unito.orderservice: DEBUG
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:rabbitmq}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME}
+    password: ${SPRING_RABBITMQ_PASSWORD}
+
+app:
+  rabbitmq:
+    exchange: ${APP_RABBITMQ_EXCHANGE:fooddelivery.exchange}
+    queue:
+      ready-ticket: ${APP_RABBITMQ_QUEUE_READY_TICKET:order.ready-ticket}
+    routingkey:
+      prepare-ticket: ${APP_RABBITMQ_ROUTINGKEY_PREPARE_TICKET:rk.order.prepare-ticket}
+      ready-ticket: ${APP_RABBITMQ_ROUTINGKEY_READY_TICKET:rk.kitchen.ready-ticket}
 
 services:
   restaurant:
-    url: ${SERVICES_RESTAURANT_URL:http://localhost:8091}
+    url: ${SERVICES_RESTAURANT_URL:http://restaurant-service:8091}
   accounting:
-    url: ${SERVICES_ACCOUNTING_URL:http://localhost:8092}
+    url: ${SERVICES_ACCOUNTING_URL:http://accounting-service:8092}
+
+logging:
+  level:
+    root: ${LOGGING_LEVEL_ROOT:INFO}
+    it.unito.orderservice: ${LOGGING_LEVEL_ORDERSERVICE:DEBUG}

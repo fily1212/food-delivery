@@ -1,0 +1,6 @@
+server:
+  port: ${SERVER_PORT:8091}
+
+spring:
+  application:
+    name: restaurant-service

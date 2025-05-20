@@ -1,3 +1,13 @@
+version: "3.9"
+
+networks:
+  fooddelivery-net:
+    driver: bridge
+
+volumes:
+  pgdata:
+  rabbitmq_data:
+
 services:
   postgres:
     image: postgres:15
@@ -6,93 +16,104 @@ services:
       POSTGRES_DB: order_db
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:
       - fooddelivery-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user"]
+      interval: 10s
+      retries: 5
 
-  order-service:
-    build: ./order-service
-    ports:
-      - "8090:8090"
+  rabbitmq:
+    image: rabbitmq:3.11-management
+    container_name: rabbitmq
     environment:
-      # Sovrascrive le properties di Spring Boot
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/order_db # Usa il nome del servizio 'postgres-db' come hostname!
-      SPRING_DATASOURCE_USERNAME: user
-      SPRING_DATASOURCE_PASSWORD: password
-      SERVICES_RESTAURANT_URL: http://restaurant-service:8091 # Usa il nome del servizio 'restaurant-service'
-      SERVICES_ACCOUNTING_URL: http://accounting-service:8092 # Usa il nome del servizio 'accounting-service'
-    depends_on:
-      - postgres
-      - restaurant-service
-      - accounting-service
-    networks:
-      - fooddelivery-net
-
-  restaurant-service:
-    build: ./restaurant-service
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
     ports:
-      - "8091:8091"
+      - "15672:15672"
     networks:
       - fooddelivery-net
 
   accounting-service:
     build: ./accounting-service
-    ports:
-      - "8092:8092"
+    image: fooddelivery/accounting-service:latest
+    environment:
+      SERVER_PORT: 8092
+    depends_on:
+      rabbitmq:
+        condition: service_started
     networks:
       - fooddelivery-net
 
-  rabbitmq:
-    image: rabbitmq:3.11-management # Usa immagine con UI di management inclusa
-    container_name: rabbitmq_container
-    ports:
-      - "5672:5672" # Porta AMQP standard
-      - "15672:15672" # Porta per la Management UI
+  restaurant-service:
+    build: ./restaurant-service
+    image: fooddelivery/restaurant-service:latest
     environment:
-    # Credenziali di default: guest/guest (ok per sviluppo locale)
-     RABBITMQ_DEFAULT_USER: user
-     RABBITMQ_DEFAULT_PASS: password
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq/ # Volume per persistere stato (config, messaggi non acked)
+      SERVER_PORT: 8091
+    depends_on:
+      rabbitmq:
+        condition: service_started
     networks:
       - fooddelivery-net
 
   kitchen-service:
-    build:
-      context: ./kitchen-service
-    ports:
-      - "8093:8093"
+    build: ./kitchen-service
+    image: fooddelivery/kitchen-service:latest
     environment:
       SERVER_PORT: 8093
-      SPRING_APPLICATION_NAME: kitchen-service
-      # Configurazione RabbitMQ (verrà usata da Spring AMQP)
-      SPRING_RABBITMQ_HOST: rabbitmq # Nome del servizio RabbitMQ in Compose
-      SPRING_RABBITMQ_PORT: 5672
+      SPRING_DATASOURCE_URL: jdbc:h2:mem:kitchen_db;DB_CLOSE_DELAY=-1
+      SPRING_DATASOURCE_USERNAME: sa
+      SPRING_DATASOURCE_PASSWORD: ""
+      SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_USERNAME: user
       SPRING_RABBITMQ_PASSWORD: password
-      SPRING_DATASOURCE_URL: jdbc:h2:mem:kitchendb;DB_CLOSE_DELAY=-1
-      SPRING_DATASOURCE_DRIVERCLASSNAME: org.h2.Driver
-      SPRING_DATASOURCE_USERNAME: sa
-      SPRING_DATASOURCE_PASSWORD: password
-      SPRING_JPA_DATABASE-PLATFORM: org.hibernate.dialect.H2Dialect
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_H2_CONSOLE_ENABLED: true # Abilita console H2 per debug
-      SPRING_H2_CONSOLE_PATH: /h2-console
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_started
     networks:
       - fooddelivery-net
 
-volumes:
-  pgdata:
-    driver: local
+  order-service:
+    build: ./order-service
+    image: fooddelivery/order-service:latest
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/order_db
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_USERNAME: user
+      SPRING_RABBITMQ_PASSWORD: password
+      APP_RABBITMQ_EXCHANGE: fooddelivery.exchange
+      APP_RABBITMQ_QUEUE_READY_TICKET: order.ready-ticket
+      APP_RABBITMQ_ROUTINGKEY_PREPARE_TICKET: rk.order.prepare-ticket
+      APP_RABBITMQ_ROUTINGKEY_READY_TICKET: rk.kitchen.ready-ticket
 
-  rabbitmq_data:
-    driver: local
+      SERVICES_RESTAURANT_URL: http://restaurant-service:8091
+      SERVICES_ACCOUNTING_URL: http://accounting-service:8092
 
-networks:
-  fooddelivery-net:
-    driver: bridge
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    networks:
+      - fooddelivery-net
+    ports:
+      - "8090:8090"
+
+  frontend:
+    build: ./frontend          # o image: frontend:local se hai già buildato
+    image: fooddelivery/frontend:latest
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      INTERNAL_API_BASE: "http://order-service:8090"
+    depends_on:
+      - order-service
+    networks:
+      - fooddelivery-net
