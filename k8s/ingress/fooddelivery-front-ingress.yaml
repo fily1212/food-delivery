@@ -1,0 +1,18 @@
+# k8s/ingress/fooddelivery-front-ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fooddelivery-front-ingress
+  namespace: fooddelivery
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: fooddelivery.192.168.49.2.nip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port: { number: 3000 }

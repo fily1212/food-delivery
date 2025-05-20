@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+  namespace: fooddelivery
+  labels:
+    app: rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3.11-management # Immagine ufficiale
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: amqp
+              containerPort: 5672 # Porta AMQP per i messaggi
+            - name: management
+              containerPort: 15672 # Porta per l'interfaccia di gestione
+          envFrom:
+            - secretRef:
+                name: rabbitmq-secret
+          volumeMounts:
+            - name: rabbitmq-data
+              mountPath: /var/lib/rabbitmq
+          # Aggiungere liveness e readiness probes per RabbitMQ è una buona pratica
+          readinessProbe:
+            tcpSocket: # Controlla se la porta AMQP è aperta
+              port: 5672
+            initialDelaySeconds: 10
+            periodSeconds: 5
+     #     livenessProbe:
+     #       exec: # Controlla lo stato del nodo RabbitMQ
+     #         command:
+     #           - rabbitmq-diagnostics
+     #           - status
+     #       initialDelaySeconds: 60
+     #       periodSeconds: 30
+     #       timeoutSeconds: 20
+      volumes:
+        - name: rabbitmq-data
+          persistentVolumeClaim:
+            claimName: rabbitmq-data-pvc

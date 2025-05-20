@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+  namespace: fooddelivery
+spec:
+  selector:
+    app: order-service
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8090       # Porta esposta all'interno del cluster e dal NodePort (se non specificato nodePort)
+      targetPort: 8090 # Porta del container
+      # nodePort: 30090 # Opzionale: puoi specificare una NodePort fissa (tra 30000-32767)
+  type: NodePort     # Espone il servizio su una porta statica su ogni IP del Nodo

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres # Questo sarà il nome DNS per accedere al DB
+  namespace: fooddelivery
+spec:
+  selector:
+    app: postgres # Seleziona i Pod con label app: postgres
+  ports:
+    - protocol: TCP
+      port: 5432      # Porta esposta dal Service
+      targetPort: 5432 # Porta del container
+  type: ClusterIP   # Espone il servizio solo all'interno del cluster

@@ -1,0 +1,61 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+  namespace: fooddelivery
+  labels:
+    app: order-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+    spec:
+      containers:
+        - name: order-service
+          image: fooddelivery/order-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8090 # La porta interna del container
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://postgres:5432/order_db" # "postgres" è il nome del Service K8s
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+            - name: SPRING_RABBITMQ_HOST
+              value: "rabbitmq" # Nome del Service K8s
+            - name: SPRING_RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-secret
+                  key: RABBITMQ_DEFAULT_USER
+            - name: SPRING_RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-secret
+                  key: RABBITMQ_DEFAULT_PASS
+            - name: APP_RABBITMQ_EXCHANGE
+              value: "fooddelivery.exchange"
+            - name: APP_RABBITMQ_QUEUE_READY_TICKET
+              value: "order.ready-ticket"
+            - name: APP_RABBITMQ_ROUTINGKEY_PREPARE_TICKET
+              value: "rk.order.prepare-ticket"
+            - name: APP_RABBITMQ_ROUTINGKEY_READY_TICKET
+              value: "rk.kitchen.ready-ticket"
+            - name: SERVICES_RESTAURANT_URL
+              value: "http://restaurant-service:8091" # Nome del Service K8s
+            - name: SERVICES_ACCOUNTING_URL
+              value: "http://accounting-service:8092" # Nome del Service K8s

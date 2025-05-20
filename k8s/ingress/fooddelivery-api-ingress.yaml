@@ -1,0 +1,28 @@
+# k8s/ingress/fooddelivery-api-ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fooddelivery-api-ingress
+  namespace: fooddelivery
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: fooddelivery.192.168.49.2.nip.io
+      http:
+        paths:
+          - path: /api/order(/|$)(.*)
+            pathType: ImplementationSpecific   # ← necessario con regex
+            backend:
+              service:
+                name: order-service
+                port: { number: 8090 }
+
+          - path: /api/kitchen(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: kitchen-service
+                port: { number: 8093 }
